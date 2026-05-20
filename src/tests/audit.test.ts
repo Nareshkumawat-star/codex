@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { runAudit } from '../utils/auditEngine';
 import { AuditInput } from '../types';
+import { parseSpendText } from '../utils/ai';
 
 describe('Credex AI Spend Audit Engine Tests', () => {
   
@@ -119,5 +120,25 @@ describe('Credex AI Spend Audit Engine Tests', () => {
     expect(consolidationRec).toBeDefined();
     expect(consolidationRec?.monthlySavings).toBe(20);
     expect(result.monthlySavings).toBe(20);
+  });
+
+  // Test 7: AI Statement Parser (Heuristic Verification)
+  it('should successfully parse raw statement text into correct tool segments', async () => {
+    const text = 'We are a startup with 7 people. We spend $90 for 3 seats of Claude Team, and also developers have Cursor Pro (2 seats at $40 total). The primary usecase is building software.';
+    const result = await parseSpendText(text);
+
+    expect(result.teamSize).toBe(7);
+    expect(result.primaryUseCase).toBe('Coding & Software Development');
+    expect(result.tools.length).toBe(2);
+
+    const claudeTool = result.tools.find(t => t.name === 'Claude');
+    expect(claudeTool).toBeDefined();
+    expect(claudeTool?.plan).toBe('Team');
+    expect(claudeTool?.seats).toBe(3);
+
+    const cursorTool = result.tools.find(t => t.name === 'Cursor');
+    expect(cursorTool).toBeDefined();
+    expect(cursorTool?.plan).toBe('Pro');
+    expect(cursorTool?.seats).toBe(2);
   });
 });

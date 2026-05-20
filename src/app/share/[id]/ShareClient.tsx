@@ -65,30 +65,32 @@ export default function ShareClient({ audit }: ShareClientProps) {
       <div className="mb-10">
         <h3 className="text-lg font-bold text-white mb-4">Audited Tooling Stack</h3>
         <div className="glass-panel rounded-3xl overflow-hidden border-white/5">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-white/5 text-xs text-gray-400 uppercase font-semibold">
-                <th className="px-6 py-4">Tool</th>
-                <th className="px-6 py-4">Plan Name</th>
-                <th className="px-6 py-4 text-center">Allocated Seats</th>
-                <th className="px-6 py-4 text-right">Monthly Spend</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 text-gray-300">
-              {tools.map((tool) => (
-                <tr key={tool.id} className="hover:bg-white/[0.005] transition-colors">
-                  <td className="px-6 py-4 font-bold text-white">{tool.name}</td>
-                  <td className="px-6 py-4">
-                    <span className="bg-gray-800 text-gray-400 px-2 py-0.5 rounded text-xs">
-                      {tool.plan}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center font-mono">{tool.seats}</td>
-                  <td className="px-6 py-4 text-right font-mono font-medium">${tool.monthlySpend.toLocaleString()}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-white/5 text-xs text-gray-400 uppercase font-semibold">
+                  <th className="px-6 py-4">Tool</th>
+                  <th className="px-6 py-4">Plan Name</th>
+                  <th className="px-6 py-4 text-center">Allocated Seats</th>
+                  <th className="px-6 py-4 text-right">Monthly Spend</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-gray-300">
+                {tools.map((tool) => (
+                  <tr key={tool.id} className="hover:bg-white/[0.005] transition-colors">
+                    <td className="px-6 py-4 font-bold text-white">{tool.name}</td>
+                    <td className="px-6 py-4">
+                      <span className="bg-gray-800 text-gray-400 px-2 py-0.5 rounded text-xs">
+                        {tool.plan}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center font-mono">{tool.seats}</td>
+                    <td className="px-6 py-4 text-right font-mono font-medium">${tool.monthlySpend.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

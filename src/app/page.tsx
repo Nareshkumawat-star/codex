@@ -83,11 +83,6 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20 pb-16 text-center relative">
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl -z-10" />
         
-        {/* Product Hunt Badge Mock */}
-        <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-3 py-1 text-xs font-bold text-indigo-300 mb-6 uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5" />
-          Product Hunt #1 Product of the Day
-        </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.05] max-w-4xl mx-auto">
           Stop Overpaying for <span className="text-gradient">Frontier AI Tools</span>

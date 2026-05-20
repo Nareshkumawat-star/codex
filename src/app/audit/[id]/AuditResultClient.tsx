@@ -22,6 +22,14 @@ interface AuditResultClientProps {
 
 export default function AuditResultClient({ audit }: AuditResultClientProps) {
   const [copied, setCopied] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
+
+  const toggleStep = (idx: number) => {
+    setCompletedSteps(prev => ({
+      ...prev,
+      [idx]: !prev[idx]
+    }));
+  };
 
   const {
     id,
@@ -33,6 +41,10 @@ export default function AuditResultClient({ audit }: AuditResultClientProps) {
   } = audit;
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/share/${id}` : '';
+
+  const totalRecommendations = recommendations.length;
+  const completedCount = Object.values(completedSteps).filter(Boolean).length;
+  const progressPercent = totalRecommendations > 0 ? Math.round((completedCount / totalRecommendations) * 100) : 100;
 
   const handleCopyLink = async () => {
     try {
@@ -220,6 +232,112 @@ export default function AuditResultClient({ audit }: AuditResultClientProps) {
           </div>
         )}
       </div>
+
+      {/* Dynamic Actionable Savings Roadmap */}
+      {recommendations.length > 0 && (
+        <div className="mb-10 mt-12">
+          <div className="glass-panel rounded-3xl p-6 md:p-8 border-indigo-500/20 bg-indigo-950/5 relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute -top-12 -left-12 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl -z-10" />
+            
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-white/5">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  🪄 Next Steps: Actionable Savings Roadmap
+                </h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  Follow this interactive step-by-step checklist to claim your annual savings of ${(audit.annualSavings).toLocaleString()}/yr.
+                </p>
+              </div>
+
+              {/* Progress Tracker */}
+              <div className="flex items-center gap-3 w-full md:w-auto shrink-0 bg-gray-900/60 border border-white/5 rounded-2xl p-3">
+                <div className="text-left">
+                  <span className="text-[10px] text-gray-500 uppercase font-extrabold tracking-wider block">Roadmap Progress</span>
+                  <span className="text-sm font-bold text-white font-mono">
+                    {completedCount} of {totalRecommendations} completed
+                  </span>
+                </div>
+                <div className="w-24 bg-gray-800 rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-indigo-500 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <span className="text-xs font-bold text-indigo-400 font-mono w-8 text-right">
+                  {progressPercent}%
+                </span>
+              </div>
+            </div>
+
+            {/* Steps List */}
+            <div className="space-y-4">
+              {recommendations.map((rec, idx) => {
+                const isCompleted = !!completedSteps[idx];
+                return (
+                  <div 
+                    key={idx}
+                    className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
+                      isCompleted 
+                        ? 'bg-emerald-500/5 border-emerald-500/20' 
+                        : 'bg-gray-950/40 border-white/5 hover:border-white/10'
+                    }`}
+                    onClick={() => toggleStep(idx)}
+                  >
+                    {/* Checkbox button */}
+                    <div
+                      className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all ${
+                        isCompleted 
+                          ? 'bg-emerald-500 border-emerald-400 text-white' 
+                          : 'border-white/20 text-transparent hover:border-indigo-400'
+                      }`}
+                    >
+                      <Check className="w-4 h-4" />
+                    </div>
+
+                    {/* Step Content */}
+                    <div className="flex-grow">
+                      <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-1">
+                        <span className={`text-sm font-bold transition-all ${isCompleted ? 'text-gray-500 line-through' : 'text-white'}`}>
+                          Step {idx + 1}: {rec.type === 'consolidation' ? 'Consolidate' : rec.type === 'downgrade' ? 'Downgrade' : 'Optimize'} {rec.toolName}
+                        </span>
+                        <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg shrink-0 ${isCompleted ? 'bg-gray-800 text-gray-500' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                          Save +${rec.monthlySavings}/mo
+                        </span>
+                      </div>
+                      <p className={`text-xs mt-1.5 leading-relaxed transition-all ${isCompleted ? 'text-gray-600' : 'text-gray-400'}`}>
+                        {rec.type === 'consolidation' 
+                          ? `Consolidate your licensing. Migrate your team members or shared models from ${rec.toolName} to your primary suite to prevent overlap. Cancel any redundant accounts.`
+                          : rec.type === 'downgrade'
+                          ? `Log in to your ${rec.toolName} Billing/Admin settings. Change your subscription tier from "${rec.currentPlan}" to "${rec.suggestedAlternative}" to lower costs immediately.`
+                          : `Optimize your seat allocations for ${rec.toolName}. Review unused licenses and drop excessive seats to scale back spend.`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Congratulations Banner */}
+            {progressPercent === 100 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 text-emerald-400"
+              >
+                <div className="p-2 bg-emerald-500/20 rounded-xl">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="text-sm font-bold text-white">🎉 Stack Efficiency Unlocked!</h5>
+                  <p className="text-xs text-gray-400 mt-0.5">You have completed all actions on your roadmap. Your annual savings of ${(audit.annualSavings).toLocaleString()}/yr are officially secured!</p>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Grid: Save/Export Form and Consultation CTA */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">

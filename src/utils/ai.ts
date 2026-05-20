@@ -265,20 +265,25 @@ export async function parseSpendText(text: string): Promise<ParsedAuditInput> {
     if (tool.regex.test(normalizedText)) {
       // Find plan details
       let plan = tool.defaultPlan;
-      if (/enterprise/i.test(lowercaseText) && lowercaseText.indexOf('enterprise') > lowercaseText.indexOf(tool.name.toLowerCase()) - 50 && lowercaseText.indexOf('enterprise') < lowercaseText.indexOf(tool.name.toLowerCase()) + 50) {
+      const toolIdx = lowercaseText.indexOf(tool.name.toLowerCase());
+      const startWindow = Math.max(0, toolIdx - 25);
+      const endWindow = Math.min(lowercaseText.length, toolIdx + tool.name.length + 25);
+      const localContext = lowercaseText.slice(startWindow, endWindow);
+
+      if (/enterprise/i.test(localContext)) {
         plan = 'Enterprise';
-      } else if (/team/i.test(lowercaseText) && lowercaseText.indexOf('team') > lowercaseText.indexOf(tool.name.toLowerCase()) - 50 && lowercaseText.indexOf('team') < lowercaseText.indexOf(tool.name.toLowerCase()) + 50) {
-        plan = 'Team';
-      } else if (/business/i.test(lowercaseText) && lowercaseText.indexOf('business') > lowercaseText.indexOf(tool.name.toLowerCase()) - 50 && lowercaseText.indexOf('business') < lowercaseText.indexOf(tool.name.toLowerCase()) + 50) {
+      } else if (/business/i.test(localContext)) {
         plan = 'Business';
-      } else if (/pro/i.test(lowercaseText) && lowercaseText.indexOf('pro') > lowercaseText.indexOf(tool.name.toLowerCase()) - 50 && lowercaseText.indexOf('pro') < lowercaseText.indexOf(tool.name.toLowerCase()) + 50) {
+      } else if (/team/i.test(localContext)) {
+        plan = 'Team';
+      } else if (/pro/i.test(localContext)) {
         plan = 'Pro';
       }
 
       // Try to find seats (e.g. "5 seats", "3 users", "7 devs", "2 licenses")
       let seats = 1;
-      const seatRegex = new RegExp(`(\\d+)\\s*(?:seat|user|dev|license|people|person|account)\\s*(?:of|for)?\\s*${tool.name}`, 'i');
-      const seatRegexReverse = new RegExp(`${tool.name}\\s*.*?(\\d+)\\s*(?:seat|user|dev|license)`, 'i');
+      const seatRegex = new RegExp(`(\\d+)\\s*(?:seats?|users?|devs?|licenses?|people|person|accounts?)\\s*(?:of|for)?\\s*${tool.name}`, 'i');
+      const seatRegexReverse = new RegExp(`${tool.name}[^.,]*?(\\d+)\\s*(?:seats?|users?|devs?|licenses?|people|person|accounts?)`, 'i');
       
       const match1 = normalizedText.match(seatRegex);
       const match2 = normalizedText.match(seatRegexReverse);
@@ -327,14 +332,21 @@ export async function parseSpendText(text: string): Promise<ParsedAuditInput> {
 
   // Detect team size
   let teamSize = 5;
-  const teamMatch = normalizedText.match(/(?:team size|we are|company size|our team|startup size)\s*(?:of|is)?\s*(\d+)/i);
-  if (teamMatch) {
-    teamSize = parseInt(teamMatch[1], 10);
+  const teamMatch1 = normalizedText.match(/(?:team size|company size|our team|startup size)\s*(?:of|is|has)?\s*(\d+)/i);
+  const teamMatch2 = normalizedText.match(/(\d+)\s*(?:people|employees|members|staff|devs)\s*(?:in|on)?\s*(?:our|the)?\s*(?:team|company|startup)/i);
+  const teamMatch3 = normalizedText.match(/(?:we are|startup with|team of)\s*(?:a|an)?\s*(?:startup|team)?\s*(?:of|with|is)?\s*(\d+)\s*(?:people|employees|members|users)?/i);
+  
+  if (teamMatch1) {
+    teamSize = parseInt(teamMatch1[1], 10);
+  } else if (teamMatch2) {
+    teamSize = parseInt(teamMatch2[1], 10);
+  } else if (teamMatch3) {
+    teamSize = parseInt(teamMatch3[1], 10);
   }
 
   // Detect use case
   let primaryUseCase = 'Coding & Software Development';
-  if (/design|ui|ux|figma|proto/i.test(lowercaseText)) {
+  if (/design|\bui\b|\bux\b|figma|proto/i.test(lowercaseText)) {
     primaryUseCase = 'Product Design & Prototyping';
   } else if (/copy|write|content|marketing/i.test(lowercaseText)) {
     primaryUseCase = 'Content & Copywriting';

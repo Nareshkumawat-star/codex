@@ -7,6 +7,7 @@ import dbConnect from '../lib/mongodb';
 import Audit from '../models/Audit';
 import Lead from '../models/Lead';
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 // Helper to encrypt/encode data as a URL-safe base64 string for zero-db sharing
 function encodeAuditData(data: AuditResult): string {
@@ -170,36 +171,83 @@ export async function submitLeadAction(input: LeadInput): Promise<{ success: boo
       console.log('📝 Lead captured (offline mode):', input);
     }
 
-    // 2. Dispatch Confirmation Email via Resend
+    // 2. Dispatch Confirmation Email via SMTP or Resend
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const auditLink = `${appUrl}/audit/${auditId}`;
+
+    const subject = 'Your AI Spend Audit Report - Credex';
+    const htmlBody = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0b0f19; color: #f3f4f6; border-radius: 8px;">
+        <h2 style="color: #6366f1; margin-bottom: 20px;">Your Credex AI Spend Audit is Ready!</h2>
+        <p>Hi there,</p>
+        <p>Thank you for using Credex. We have completed your cost audit analysis and found significant areas to save budget while maintaining your engineering velocity.</p>
+        <p>You can access your personalized report at any time using your audit link:</p>
+        <div style="margin: 25px 0;">
+          <a href="${auditLink}" style="background-color: #6366f1; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Full Interactive Audit</a>
+        </div>
+        <p style="font-size: 14px; color: #9ca3af;">If you have any questions or want a manual deep-dive into tool licensing, schedule a consultation on our dashboard.</p>
+        <hr style="border: 0; border-top: 1px solid #1f2937; margin: 30px 0;" />
+        <p style="font-size: 12px; color: #6b7280; text-align: center;">&copy; ${new Date().getFullYear()} Credex. AI Spend Optimization for Startups.</p>
+      </div>
+    `;
+
+    let emailSent = false;
+
+    // A. Option 1: Standard SMTP (Gmail App Password, Brevo SMTP, etc.)
+    if (smtpHost && smtpUser && smtpPass) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465, // True for 465, false for 587
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+
+        const fromAddress = process.env.SMTP_FROM || `"Credex Spend Audit" <${smtpUser}>`;
+        await transporter.sendMail({
+          from: fromAddress,
+          to: email,
+          subject,
+          html: htmlBody,
+        });
+
+        console.log(`✉️ Audit confirmation email dispatched via SMTP to ${email}`);
+        emailSent = true;
+      } catch (smtpErr) {
+        console.error('⚠️ SMTP email delivery failed:', smtpErr);
+      }
+    }
+
+    // B. Option 2: Resend API (Fallback if SMTP is not defined)
     const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
+    if (!emailSent && resendApiKey) {
       try {
         const resend = new Resend(resendApiKey);
+        // Fallback to onboarding@resend.dev to prevent unverified domain blocks
+        const fromAddress = process.env.RESEND_FROM || 'Credex Spend Audit <onboarding@resend.dev>';
         await resend.emails.send({
-          from: 'Credex Spend Audit <audit@credex.ai>',
+          from: fromAddress,
           to: email,
-          subject: 'Your AI Spend Audit Report - Credex',
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0b0f19; color: #f3f4f6; border-radius: 8px;">
-              <h2 style="color: #6366f1; margin-bottom: 20px;">Your Credex AI Spend Audit is Ready!</h2>
-              <p>Hi there,</p>
-              <p>Thank you for using Credex. We have completed your cost audit analysis and found significant areas to save budget while maintaining your engineering velocity.</p>
-              <p>You can access your personalized report at any time using your audit link:</p>
-              <div style="margin: 25px 0;">
-                <a href="https://credex.ai/audit/${auditId}" style="background-color: #6366f1; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Full Interactive Audit</a>
-              </div>
-              <p style="font-size: 14px; color: #9ca3af;">If you have any questions or want a manual deep-dive into tool licensing, schedule a consultation on our dashboard.</p>
-              <hr style="border: 0; border-top: 1px solid #1f2937; margin: 30px 0;" />
-              <p style="font-size: 12px; color: #6b7280; text-align: center;">&copy; ${new Date().getFullYear()} Credex. AI Spend Optimization for Startups.</p>
-            </div>
-          `,
+          subject,
+          html: htmlBody,
         });
-        console.log(`✉️ Audit confirmation email dispatched to ${email}`);
-      } catch (emailErr) {
-        console.error('⚠️ Resend email delivery failed:', emailErr);
+        console.log(`✉️ Audit confirmation email dispatched via Resend to ${email}`);
+        emailSent = true;
+      } catch (resendErr) {
+        console.error('⚠️ Resend email delivery failed:', resendErr);
       }
-    } else {
-      console.log(`✉️ Email Mocked (no RESEND_API_KEY): Sent audit link to ${email}`);
+    }
+
+    if (!emailSent) {
+      console.log(`✉️ Email Mocked (Configure SMTP_USER & SMTP_PASS or RESEND_API_KEY in .env): Sent audit link to ${email}`);
     }
 
     return { success: true, message: 'Your audit has been emailed and lead successfully registered!' };
