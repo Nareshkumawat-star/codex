@@ -120,7 +120,13 @@ export async function getAuditAction(id: string): Promise<{ success: boolean; da
         const leanDoc = doc as unknown as AuditResult & { _id: { toString(): string }; createdAt?: Date };
         const auditData: AuditResult = {
           id: leanDoc._id.toString(),
-          tools: leanDoc.tools,
+          tools: leanDoc.tools.map(t => ({
+            id: t.id,
+            name: t.name,
+            plan: t.plan,
+            monthlySpend: t.monthlySpend,
+            seats: t.seats
+          })),
           teamSize: leanDoc.teamSize,
           primaryUseCase: leanDoc.primaryUseCase,
           currentMonthlySpend: leanDoc.currentMonthlySpend,
@@ -129,7 +135,16 @@ export async function getAuditAction(id: string): Promise<{ success: boolean; da
           optimizedAnnualSpend: leanDoc.optimizedAnnualSpend,
           monthlySavings: leanDoc.monthlySavings,
           annualSavings: leanDoc.annualSavings,
-          recommendations: leanDoc.recommendations,
+          recommendations: leanDoc.recommendations.map(r => ({
+            toolId: r.toolId,
+            toolName: r.toolName,
+            currentPlan: r.currentPlan,
+            suggestedAlternative: r.suggestedAlternative,
+            monthlySavings: r.monthlySavings,
+            annualSavings: r.annualSavings,
+            reason: r.reason,
+            type: r.type
+          })),
           aiSummary: leanDoc.aiSummary,
           createdAt: leanDoc.createdAt?.toISOString(),
         };
