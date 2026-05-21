@@ -212,7 +212,7 @@ export async function submitLeadAction(input: LeadInput): Promise<{ success: boo
         });
 
         const fromAddress = process.env.SMTP_FROM || `"Credex Spend Audit" <${smtpUser}>`;
-        await transporter.sendMail({
+        const info = await transporter.sendMail({
           from: fromAddress,
           to: email,
           subject,
@@ -220,6 +220,10 @@ export async function submitLeadAction(input: LeadInput): Promise<{ success: boo
         });
 
         console.log(`✉️ Audit confirmation email dispatched via SMTP to ${email}`);
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) {
+          console.log(`🔗 Ethereal Mail Preview URL: ${previewUrl}`);
+        }
         emailSent = true;
       } catch (smtpErr) {
         console.error('⚠️ SMTP email delivery failed:', smtpErr);
