@@ -232,7 +232,7 @@ export async function submitLeadAction(input: LeadInput): Promise<{ success: boo
       try {
         const resend = new Resend(resendApiKey);
         // Fallback to onboarding@resend.dev to prevent unverified domain blocks
-        const fromAddress = process.env.RESEND_FROM || 'Credex Spend Audit <onboarding@resend.dev>';
+        const fromAddress = process.env.RESEND_FROM || process.env.RESEND_SENDER_EMAIL || 'Credex Spend Audit <onboarding@resend.dev>';
         await resend.emails.send({
           from: fromAddress,
           to: email,

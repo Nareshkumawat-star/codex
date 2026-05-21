@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import SpendForm from '../components/SpendForm';
 import { 
-  Sparkles, 
   TrendingDown, 
   Search, 
   ShieldCheck, 
