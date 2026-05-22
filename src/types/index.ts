@@ -39,6 +39,7 @@ export interface AuditResult {
   annualSavings: number;
   recommendations: Recommendation[];
   aiSummary?: string;
+  companyName?: string;
   createdAt?: string;
 }
 

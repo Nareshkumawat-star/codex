@@ -135,10 +135,25 @@ describe('Credex AI Spend Audit Engine Tests', () => {
     expect(claudeTool).toBeDefined();
     expect(claudeTool?.plan).toBe('Team');
     expect(claudeTool?.seats).toBe(3);
+    expect(claudeTool?.monthlySpend).toBe(90);
 
     const cursorTool = result.tools.find(t => t.name === 'Cursor');
     expect(cursorTool).toBeDefined();
     expect(cursorTool?.plan).toBe('Pro');
     expect(cursorTool?.seats).toBe(2);
+    expect(cursorTool?.monthlySpend).toBe(40);
+  });
+
+  // Test 8: AI Statement Parser (Copilot shortname and match-term seats/plan check)
+  it('should successfully map Copilot to GitHub Copilot and parse its seats and plan', async () => {
+    const text = 'Our team has 3 seats of Copilot Pro, which costs us $30 per month.';
+    const result = await parseSpendText(text);
+
+    expect(result.tools.length).toBe(1);
+    const copilotTool = result.tools.find(t => t.name === 'GitHub Copilot');
+    expect(copilotTool).toBeDefined();
+    expect(copilotTool?.plan).toBe('Pro');
+    expect(copilotTool?.seats).toBe(3);
+    expect(copilotTool?.monthlySpend).toBe(30);
   });
 });

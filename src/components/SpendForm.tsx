@@ -137,13 +137,16 @@ export default function SpendForm() {
       const parsedData = res.data;
       if (parsedData.tools && parsedData.tools.length > 0) {
         // Map parsed tools to include temporary IDs
-        const formattedTools = parsedData.tools.map((t, idx) => ({
-          id: Math.random().toString(36).substring(7) + idx,
-          name: t.name, // Natively typed as string
-          plan: t.plan,
-          seats: t.seats || 1,
-          monthlySpend: t.monthlySpend || 0
-        }));
+        const formattedTools = parsedData.tools.map((t, idx) => {
+          const matchedTool = SUPPORTED_TOOLS.find(st => st.toLowerCase() === t.name.toLowerCase()) || t.name;
+          return {
+            id: Math.random().toString(36).substring(7) + idx,
+            name: matchedTool,
+            plan: t.plan,
+            seats: t.seats || 1,
+            monthlySpend: t.monthlySpend || 0
+          };
+        });
         
         setTools(formattedTools);
         if (parsedData.teamSize) {

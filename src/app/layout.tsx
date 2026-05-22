@@ -23,6 +23,11 @@ export const metadata: Metadata = {
   keywords: ['AI Spend Audit', 'SaaS cost optimization', 'startup spend', 'Claude', 'ChatGPT', 'Cursor Pro', 'copilot costs', 'finance optimization'],
   authors: [{ name: 'Credex Team', url: 'https://credex.ai' }],
   metadataBase: new URL('https://credex.ai'),
+  icons: {
+    icon: '/vercel.svg',
+    shortcut: '/vercel.svg',
+    apple: '/vercel.svg',
+  },
   openGraph: {
     title: 'Credex | AI Spend Audit & Cost Optimization',
     description: "Audit your startup's AI tool spending. Identify seat overlaps, plan downgrades, and save thousands of dollars annually with our deterministic audit engine.",

@@ -146,6 +146,7 @@ export async function getAuditAction(id: string): Promise<{ success: boolean; da
             type: r.type
           })),
           aiSummary: leanDoc.aiSummary,
+          companyName: leanDoc.companyName,
           createdAt: leanDoc.createdAt?.toISOString(),
         };
         return { success: true, data: auditData, offline: false };

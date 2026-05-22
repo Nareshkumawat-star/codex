@@ -262,28 +262,61 @@ export async function parseSpendText(text: string): Promise<ParsedAuditInput> {
   ];
 
   for (const tool of toolMappings) {
-    if (tool.regex.test(normalizedText)) {
+    const regexMatch = tool.regex.exec(lowercaseText);
+    if (regexMatch) {
       // Find plan details
       let plan = tool.defaultPlan;
-      const toolIdx = lowercaseText.indexOf(tool.name.toLowerCase());
-      const startWindow = Math.max(0, toolIdx - 25);
-      const endWindow = Math.min(lowercaseText.length, toolIdx + tool.name.length + 25);
+      const toolIdx = regexMatch.index;
+      const matchedTerm = regexMatch[0];
+      const startWindow = Math.max(0, toolIdx - 20);
+      const endWindow = Math.min(lowercaseText.length, toolIdx + matchedTerm.length + 50);
       const localContext = lowercaseText.slice(startWindow, endWindow);
 
-      if (/enterprise/i.test(localContext)) {
-        plan = 'Enterprise';
-      } else if (/business/i.test(localContext)) {
-        plan = 'Business';
-      } else if (/team/i.test(localContext)) {
-        plan = 'Team';
-      } else if (/pro/i.test(localContext)) {
-        plan = 'Pro';
+      const planKeywords = [
+        { name: 'Enterprise', regex: /\benterprise\b/i },
+        { name: 'Business', regex: /\bbusiness\b/i },
+        { name: 'Team', regex: /\bteam\b/i },
+        { name: 'Pro', regex: /\bpro\b/i },
+        { name: 'Individual', regex: /\bindividual\b/i },
+        { name: 'Plus', regex: /\bplus\b/i },
+        { name: 'Premium', regex: /\bpremium\b/i },
+        { name: 'Ultra', regex: /\bultra\b/i },
+        { name: 'Hobby', regex: /\bhobby\b/i },
+        { name: 'Free', regex: /\bfree\b/i },
+        { name: 'API direct', regex: /\bapi direct\b/i },
+      ];
+
+      const matchedToolIndexInLocal = toolIdx - startWindow;
+      let closestPlan = null;
+      let minDistance = Infinity;
+
+      for (const kw of planKeywords) {
+        const globalRegex = new RegExp(kw.regex.source, 'gi');
+        let match;
+        while ((match = globalRegex.exec(localContext)) !== null) {
+          const matchIdx = match.index;
+          let distance = 0;
+          if (matchIdx < matchedToolIndexInLocal) {
+            distance = matchedToolIndexInLocal - (matchIdx + match[0].length);
+          } else {
+            distance = matchIdx - (matchedToolIndexInLocal + matchedTerm.length);
+          }
+          const absDistance = Math.abs(distance);
+          if (absDistance < minDistance) {
+            minDistance = absDistance;
+            closestPlan = kw.name;
+          }
+        }
+      }
+
+      if (closestPlan !== null) {
+        plan = closestPlan;
       }
 
       // Try to find seats (e.g. "5 seats", "3 users", "7 devs", "2 licenses")
       let seats = 1;
-      const seatRegex = new RegExp(`(\\d+)\\s*(?:seats?|users?|devs?|licenses?|people|person|accounts?)\\s*(?:of|for)?\\s*${tool.name}`, 'i');
-      const seatRegexReverse = new RegExp(`${tool.name}[^.,]*?(\\d+)\\s*(?:seats?|users?|devs?|licenses?|people|person|accounts?)`, 'i');
+      const seatRegex = new RegExp(`(\\d+)\\s*(?:seats?|users?|devs?|licenses?|people|person|accounts?)\\s*(?:of|for)?\\s*${matchedTerm}`, 'i');
+      const seatRegexReverse = new RegExp(`${matchedTerm}[^.,]*?(\\d+)\\s*(?:seats?|users?|devs?|licenses?|people|person|accounts?)`, 'i');
       
       const match1 = normalizedText.match(seatRegex);
       const match2 = normalizedText.match(seatRegexReverse);
@@ -293,7 +326,7 @@ export async function parseSpendText(text: string): Promise<ParsedAuditInput> {
         seats = parseInt(match2[1], 10);
       } else {
         // Look for general digit before or after the tool name
-        const genericSeatMatch = normalizedText.match(new RegExp(`(\\d+)\\s*x\\s*${tool.name}`, 'i'));
+        const genericSeatMatch = normalizedText.match(new RegExp(`(\\d+)\\s*x\\s*${matchedTerm}`, 'i'));
         if (genericSeatMatch) {
           seats = parseInt(genericSeatMatch[1], 10);
         }
@@ -301,12 +334,11 @@ export async function parseSpendText(text: string): Promise<ParsedAuditInput> {
 
       // Try to find price/monthlySpend (e.g. "$90", "120/mo", "spending 200 dollars")
       let monthlySpend = 0;
-      const priceRegex = new RegExp(`(?:\\$|usd|price|cost|pay)\\s*(\\d+(?:\\.\\d{2})?)`, 'i');
-      const priceMatch = normalizedText.match(priceRegex);
+      const priceRegex = new RegExp(`(?:\\$|usd|price|cost|pay|at)\\s*(\\d+(?:\\.\\d{2})?)`, 'i');
+      const priceMatch = localContext.match(priceRegex);
       
       // Attempt context-aware pricing
       if (priceMatch) {
-        // Simple heuristic: if only one price is found, apply it to the first tool or split it
         monthlySpend = parseFloat(priceMatch[1]);
       } else {
         // Use realistic defaults based on plan and seats

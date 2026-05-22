@@ -345,7 +345,7 @@ export default function AuditResultClient({ audit }: AuditResultClientProps) {
         <LeadCapture 
           auditId={id || ''} 
           defaultTeamSize={teamSize}
-          defaultCompanyName={audit.tools[0]?.name || ''} 
+          defaultCompanyName={audit.companyName || ''} 
         />
 
         {/* Credex consultation CTA */}
