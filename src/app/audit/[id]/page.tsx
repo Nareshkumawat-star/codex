@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import { Metadata } from 'next';
 import { getAuditAction } from '../../actions';
 import AuditResultClient from './AuditResultClient';
@@ -9,13 +9,18 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+// Memoize the database fetch across metadata generation and page rendering
+const getAudit = cache(async (id: string) => {
+  return getAuditAction(id);
+});
+
 /**
  * Server-side metadata generator for Next.js 15 dynamic routing.
  * Correctly awaits the async params.
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const res = await getAuditAction(id);
+  const res = await getAudit(id);
   
   if (res.success && res.data) {
     const savings = Math.round(res.data.annualSavings).toLocaleString();
@@ -34,8 +39,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function AuditPage({ params }: PageProps) {
   const { id } = await params;
   
-  // Fetch audit data server-side
-  const res = await getAuditAction(id);
+  // Fetch audit data server-side (memoized)
+  const res = await getAudit(id);
 
   if (!res.success || !res.data) {
     return (

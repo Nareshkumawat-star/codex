@@ -8,6 +8,7 @@ import Audit from '../models/Audit';
 import Lead from '../models/Lead';
 import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
+import { headers } from 'next/headers';
 
 // Helper to encrypt/encode data as a URL-safe base64 string for zero-db sharing
 function encodeAuditData(data: AuditResult): string {
@@ -193,7 +194,15 @@ export async function submitLeadAction(input: LeadInput): Promise<{ success: boo
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const hostHeader = (await headers()).get('host');
+    let appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    if (!appUrl && hostHeader) {
+      const protocol = hostHeader.includes('localhost') ? 'http' : 'https';
+      appUrl = `${protocol}://${hostHeader}`;
+    }
+    if (!appUrl) {
+      appUrl = 'http://localhost:3000';
+    }
     const auditLink = `${appUrl}/audit/${auditId}`;
 
     const subject = 'Your AI Spend Audit Report - Credex';
