@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   authors: [{ name: 'Credex Team', url: 'https://credex.ai' }],
   metadataBase: new URL('https://credex.ai'),
   icons: {
-    icon: '/vercel.svg',
-    shortcut: '/vercel.svg',
-    apple: '/vercel.svg',
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/icon.png',
   },
   openGraph: {
     title: 'Credex | AI Spend Audit & Cost Optimization',
